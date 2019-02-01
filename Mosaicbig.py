@@ -4,13 +4,19 @@ import math
 from PIL import Image, ImageStat
 import glob
 import cv2
+from pathlib import Path
 
-dir = "C:/Users/User/GITHUB/Mars Curiosity Image Gallery _ NASA"
+
+dir = "C:/Users/User/GITHUB/lion photos"
 pics = [] #list of image file names
 brights = [] #average brighnesses of pics
 tilebrights = [] # average brightnesses of each tile
 mosaicblocks = [] # a list of tiles in order to make new image
 picks_small = []
+
+
+if not os.path.exists(dir+'/smalls'):
+    os.makedirs(dir+'/smalls')
 
 # clear out smalls folder ready for new run
 folder_path = dir+'/smalls'
@@ -84,13 +90,15 @@ print(total)
 
 # resize origional images and save in new dir to be used for build
 for k in range(len(mosaicblocks)):
-    foo = Image.open(mosaicblocks[k])
-    foo = foo.resize(tile_size,Image.ANTIALIAS)
-    foo.save(dir+"/smalls/smalls"+str(k)+".jpg",quality=95)
+    file = Path(dir + '/smalls/' + os.path.basename(mosaicblocks[k]))
+    if not file.exists():
+        foo = Image.open(mosaicblocks[k])
+        foo = foo.resize((10*tile_size[0],10*tile_size[1]), Image.ANTIALIAS)
+        foo.save(dir + '/smalls/' + os.path.basename(mosaicblocks[k]), quality=95)
 
 
 #begin building the new mosaic image
-new_im = Image.new('RGB', (img_shape[1],img_shape[0]))
+new_im = Image.new('RGB', (10*img_shape[1],10*img_shape[0]))
 os.chdir(dir+"/smalls")
 images = glob.glob("*.jpg")
 j = 0
@@ -100,11 +108,11 @@ for l in range(int(math.sqrt(total))):
     #print(l)
     for im in range(int(math.sqrt(total))):
         num = int((l*int(math.sqrt(total)))+im)
-        img = Image.open(dir+'/smalls/smalls' + str(num) + '.jpg')
+        img = Image.open(dir + '/smalls/' + os.path.basename(mosaicblocks[num]))
         y_cord = j
         new_im.paste(img, (i,y_cord))
-        i=(i+tile_size[0])
-    j += tile_size[1]
+        i=(i+10*tile_size[0])
+    j += 10*tile_size[1]
 
 
 

@@ -4,13 +4,21 @@ import math
 from PIL import Image, ImageStat
 import glob
 import cv2
+from pathlib import Path
+import shutil
 
-dir = "C:/Users/User/GITHUB/Mars Curiosity Image Gallery _ NASA"
-pics = [] #list of image file names
-brights = [] #average brighnesses of pics
-tilebrights = [] # average brightnesses of each tile
-mosaicblocks = [] # a list of tiles in order to make new image
+
+#dir = "C:/Users/User/Pictures/MalaysiaBest"
+dir = "C:/Users/User/GITHUB/lion photos"
+pics = []  #  list of image file names
+brights = []  #  average brighnesses of pics
+tilebrights = []  # average brightnesses of each tile
+mosaicblocks = []  # a list of tiles in order to make new image
 picks_small = []
+
+
+if not os.path.exists(dir+'/smalls'):
+    os.makedirs(dir+'/smalls')
 
 # clear out smalls folder ready for new run
 folder_path = dir+'/smalls'
@@ -22,37 +30,40 @@ for file_object in os.listdir(folder_path):
         shutil.rmtree(file_object_path)
 
 
-
 def brightness( im_file ):
     im = Image.open(im_file)
     stat = ImageStat.Stat(im)
     bright = stat.rms[0]
     return bright
 
-#make a list of image names
+#  make a list of image names
+
+
 for file in os.listdir(dir):  # open each file and find average brightness
+
     filename = os.fsdecode(file)
     if filename.endswith(".jpg"):
         name = dir+'/'+file
-        pics = np.append(pics,name)
+        pics = np.append(pics, name)
 
-#find the average brightness of each image
+#  find the average brightness of each image
+
 for file in os.listdir(dir):  # open each file and find average brightness
     filename = os.fsdecode(file)
     if filename.endswith(".jpg"):
         name = dir+'/'+file
         bright = brightness(name)
-        brights = np.append(brights,bright)
+        brights = np.append(brights, bright)
 
 
-img = cv2.imread(dir+'/'+'Caipic.jpg')
+img = cv2.imread(dir+'/'+'Master.jpg')
 img_shape = img.shape
 # divide each side into X
 X = 100
 tile_size = (int(img_shape[1]/X), int(img_shape[0]/X))
 offset = (int(img_shape[1]/X), int(img_shape[0]/X))
-total = int((img.shape[1]/tile_size[0])**2)
-#split the main image up onto tiles and work out their brightness.
+total = int(round((img.shape[1]/tile_size[0])**2, -2))
+#  split the main image up onto tiles and work out their brightness.
 
 for i in range(int(math.sqrt(total))):
     for j in range(int(math.sqrt(total))):
@@ -60,37 +71,49 @@ for i in range(int(math.sqrt(total))):
         # Debugging the tiles
         cropped_img = cv2.imwrite("debug_" + str(i) + "_" + str(j) + ".jpg", cropped_img)
         tilebright = brightness("debug_" + str(i) + "_" + str(j) + ".jpg")
-        tilebrights = np.append(tilebrights,tilebright)
+        tilebrights = np.append(tilebrights, tilebright)
         os.remove("debug_" + str(i) + "_" + str(j) + ".jpg")
 
 # begin building mosaic
 
 brightness_factor = np.average(tilebrights)/np.average(brights)
 tilebrights = tilebrights/brightness_factor
+print(total)
+print(len(tilebrights))
+
 
 def find_nearest(array, value):
+
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
     return pics[idx]
 
 # select mosaic images based om brightness.
+
+
 for k in range(total):
-    selected_im = find_nearest(brights,tilebrights[k])
-    mosaicblocks = np.append(mosaicblocks,selected_im)
+
+    selected_im = find_nearest(brights, tilebrights[k])
+    mosaicblocks = np.append(mosaicblocks, selected_im)
+    print(total-k)
 
 print(len(mosaicblocks))
-print(total)
+
 
 
 # resize origional images and save in new dir to be used for build
 for k in range(len(mosaicblocks)):
-    foo = Image.open(mosaicblocks[k])
-    foo = foo.resize(tile_size,Image.ANTIALIAS)
-    foo.save(dir+"/smalls/smalls"+str(k)+".jpg",quality=95)
+    file = Path(dir + '/smalls/' + os.path.basename(mosaicblocks[k]))
+    if not file.exists():
+        foo = Image.open(mosaicblocks[k])
+        foo = foo.resize((10*tile_size[0],10*tile_size[1]), Image.ANTIALIAS)
+        foo.save(dir + '/smalls/' + os.path.basename(mosaicblocks[k]), quality=95)
 
 
-#begin building the new mosaic image
-new_im = Image.new('RGB', (img_shape[1],img_shape[0]))
+#  begin building the new mosaic image
+
+
+new_im = Image.new('RGB', (10*img_shape[1], 10*img_shape[0]))
 os.chdir(dir+"/smalls")
 images = glob.glob("*.jpg")
 j = 0
@@ -100,14 +123,13 @@ for l in range(int(math.sqrt(total))):
     #print(l)
     for im in range(int(math.sqrt(total))):
         num = int((l*int(math.sqrt(total)))+im)
-        img = Image.open(dir+'/smalls/smalls' + str(num) + '.jpg')
+        img = Image.open(dir + '/smalls/' + os.path.basename(mosaicblocks[num]))
         y_cord = j
-        new_im.paste(img, (i,y_cord))
-        i=(i+tile_size[0])
-    j += tile_size[1]
-
-
+        new_im.paste(img, (i, y_cord))
+        i=(i+10*tile_size[0])
+    j += 10*tile_size[1]
 
 #new_im.show()
-new_im.save(dir+"/out.jpg", "JPEG", quality=80, optimize=True, progressive=True)
 
+
+new_im.save(dir+"/out.jpg", "JPEG", quality=80, optimize=True, progressive=True)

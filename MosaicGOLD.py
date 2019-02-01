@@ -45,17 +45,17 @@ for file in os.listdir(dir):  # open each file and find average brightness
         brights = np.append(brights,bright)
 
 
-img = cv2.imread(dir+'/'+'Caipic.jpg')
+img = cv2.imread(dir+'/'+'master.jpg')
 img_shape = img.shape
 # divide each side into X
 X = 100
 tile_size = (int(img_shape[1]/X), int(img_shape[0]/X))
 offset = (int(img_shape[1]/X), int(img_shape[0]/X))
-total = int((img.shape[1]/tile_size[0])**2)
+
 #split the main image up onto tiles and work out their brightness.
 
-for i in range(int(math.sqrt(total))):
-    for j in range(int(math.sqrt(total))):
+for i in range(int(img.shape[1]/tile_size[0])):
+    for j in range(int(img.shape[1]/tile_size[0])):
         cropped_img = img[offset[1]*i:min(offset[1]*i+tile_size[1], img_shape[0]), offset[0]*j:min(offset[0]*j+tile_size[0], img_shape[1])]
         # Debugging the tiles
         cropped_img = cv2.imwrite("debug_" + str(i) + "_" + str(j) + ".jpg", cropped_img)
@@ -64,7 +64,7 @@ for i in range(int(math.sqrt(total))):
         os.remove("debug_" + str(i) + "_" + str(j) + ".jpg")
 
 # begin building mosaic
-
+total = int((img.shape[1]/tile_size[0])**2)
 brightness_factor = np.average(tilebrights)/np.average(brights)
 tilebrights = tilebrights/brightness_factor
 
@@ -90,16 +90,16 @@ for k in range(len(mosaicblocks)):
 
 
 #begin building the new mosaic image
-new_im = Image.new('RGB', (img_shape[1],img_shape[0]))
+new_im = Image.new('RGB', (1600,900))
 os.chdir(dir+"/smalls")
 images = glob.glob("*.jpg")
 j = 0
-for l in range(int(math.sqrt(total))):
+for l in range(X):
     i = 0
 
     #print(l)
-    for im in range(int(math.sqrt(total))):
-        num = int((l*int(math.sqrt(total)))+im)
+    for im in range(X):
+        num = int((l*X)+im)
         img = Image.open(dir+'/smalls/smalls' + str(num) + '.jpg')
         y_cord = j
         new_im.paste(img, (i,y_cord))
